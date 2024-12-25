@@ -34,6 +34,9 @@ def get_playlist_albums(playlist_url):
         sp = spotipy.Spotify(auth_manager=auth_manager)
         playlist_id = playlist_url.split('/')[-1].split('?')[0]
         
+        if "?si" in playlist_id:
+            playlist_id = playlist_id.split("?")[0]
+        
         # Fetch all tracks in the playlist
         tracks_data = []
         results = sp.playlist_tracks(playlist_id, 
