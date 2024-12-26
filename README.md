@@ -9,4 +9,4 @@ For more information about how the popularity scores are calculated, refer to th
 <img src="test.png" alt="Expected Output" width="400"/>
 
 ## Future Improvements
-- *Extend the app to visualise YouTube playlists.*
+- [Support for YouTube Playlists](https://github.com/justinadrmun/music-playlist-iceberg/issues/1)
