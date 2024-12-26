@@ -4,19 +4,20 @@ from spotify_client import get_playlist_albums
 from visualizer import create_iceberg_visual
 
 TIER_THRESHOLDS: dict = {
-    1: 50,
-    2: 40,
-    3: 30,
-    4: 20,
-    5: 10,
-    6: 5,
-    7: 2,
-    8: 0
+    1: 60,
+    2: 50,
+    3: 40,
+    4: 30,
+    5: 20,
+    6: 10,
+    7: 5,
+    8: 1
 }
 
 def main():
     st.title("Spotify Iceberg Visualiser")
-    st.write("Enter a Spotify playlist URL to see an iceberg visualisation of album popularity.")
+    url = "https://developer.spotify.com/documentation/web-api/reference/get-several-tracks#:~:text=of%20the%20track.-,popularity,-integer"
+    st.write("Enter a Spotify playlist URL to see an iceberg visualisation of [album popularity](%s)." % url)
     tier_frame = pd.DataFrame({"threshold": list(TIER_THRESHOLDS.values())}).T
     tier_frame.columns = [f"Tier {i}" for i in range(1, len(tier_frame.columns) + 1)]
 
@@ -29,7 +30,11 @@ def main():
         tier_frame = st.data_editor(tier_frame, hide_index=True)
         for tier, threshold in zip(tier_frame.columns, tier_frame.iloc[0]):
             TIER_THRESHOLDS[int(tier.replace("Tier ", ""))] = threshold
-        st.caption("""_Note: Tiers are capped at 11 items each._""")
+        st.caption("""
+            _We recommend using a threshold of 1 for the last tier as some albums may return 
+            an unexpected popularity score of 0. Also, it is worth noting that tiers are capped at **11 albums** each._
+            """
+        )
 
     playlist_url = st.text_input("Playlist URL:")
 
@@ -52,6 +57,10 @@ def main():
 
         with st.spinner(f"Fetching album data..."):
             albums_data = get_playlist_albums(playlist_url, TIER_THRESHOLDS)
+            albums_frame = pd.DataFrame(albums_data).T.sort_values("popularity", ascending=False)
+            lower_limit = TIER_THRESHOLDS[max(TIER_THRESHOLDS.keys())]
+            albums_data = {album: data for album, data in albums_data.items() if data["popularity"] >= lower_limit}
+
             if albums_data is not None:
                 if len(albums_data) >= 100:
                     st.warning("""
@@ -61,7 +70,12 @@ def main():
                     )
                 st.write("")
                 st.session_state["iceberg_image"] = create_iceberg_visual(albums_data)
-                st.image(st.session_state["iceberg_image"], caption="Save iceberg image with right-click")
+                tab1, tab2 = st.tabs(["Iceberg", "Data"])
+                tab1.image(st.session_state["iceberg_image"], caption="Save iceberg image with right-click")
+                tab2.dataframe(albums_frame.drop(columns=["image_url"]), 
+                    use_container_width=True, 
+                    height=int(35.2*(len(albums_frame)+1)) 
+                )
             else:
                 st.warning("Issue fetching album data. Please check the playlist URL or try again later.")
 

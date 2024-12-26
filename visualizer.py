@@ -37,9 +37,9 @@ def create_iceberg_visual(albums_data):
         tier = data["tier"]
         tiers.setdefault(tier, []).append(data)
     
-    # Sort albums within each tier by avg_popularity descending
+    # Sort albums within each tier by popularity descending
     for tier in tiers:
-        tiers[tier].sort(key=lambda x: x["avg_popularity"], reverse=True)
+        tiers[tier].sort(key=lambda x: x["popularity"], reverse=True)
     
     for tier, albums in tiers.items():
         pos_x, pos_y = tier_positions[tier]

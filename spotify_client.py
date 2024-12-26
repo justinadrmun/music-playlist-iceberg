@@ -52,7 +52,7 @@ def get_playlist_albums(playlist_url, TIER_THRESHOLDS, max_albums=100):
         # Fetch tracks with rate limiting protection
         tracks_data = []
         results = sp.playlist_tracks(playlist_id, 
-                                   fields="items(track(album(name,images),popularity)),next", 
+                                   fields="items(track(album(id,name,images),popularity)),next", 
                                    limit=100)
         tracks_data.extend(results["items"])
         
@@ -68,37 +68,46 @@ def get_playlist_albums(playlist_url, TIER_THRESHOLDS, max_albums=100):
                     break
                 time.sleep(1)  # Wait longer between retries
         
-        album_map = {}
+        album_ids = []
         for item in tracks_data:
-            if len(album_map) >= max_albums:
+            if len(album_ids) >= max_albums:
                 break
             if item.get("track") and item["track"].get("album"):
-                album_info = item["track"]["album"]
-                album_name = album_info.get("name", "Unknown Album")
-                album_popularity = item["track"].get("popularity", 0)
-                
+                album_id = item["track"]["album"].get("id")
+                if album_id and album_id not in album_ids:
+                    album_ids.append(album_id)
+
+        # Fetch album info in chunks
+        album_map = {}
+        chunk_size = 20
+        for i in range(0, len(album_ids), chunk_size):
+            album_chunk = album_ids[i:i+chunk_size]
+            albums_data = sp.albums(album_chunk)
+            for alb in albums_data.get("albums", []):
+                album_name = alb.get("name", "Unknown Album")
+                album_artists = alb.get("artists", "Unknown Artist")
+                if album_artists != "Unknown Artist":
+                    album_artists = album_artists[0].get("name", "Unknown Artist")
                 if album_name not in album_map:
-                    images = album_info.get("images", [])
+                    images = alb.get("images", [])
                     image_url = images[0].get("url") if images else None
                     album_map[album_name] = {
                         "image_url": image_url,
-                        "popularity_scores": []
+                        "artist": album_artists,
+                        "popularity": alb.get("popularity", 0)
                     }
-                album_map[album_name]["popularity_scores"].append(album_popularity)
-        
+
         if not album_map:
             st.warning("No valid albums found in playlist")
             return None
 
+        # Assign tiers based on album popularity
         for album_name, data in album_map.items():
-            scores = data["popularity_scores"]
-            avg_popularity = sum(scores) / len(scores)
+            pop = data["popularity"]
             data["tier"] = next(
-                (tier for tier, threshold in TIER_THRESHOLDS.items() 
-                 if avg_popularity >= threshold),
-                max(TIER_THRESHOLDS.keys())  # Default to lowest tier
+                (tier for tier, threshold in TIER_THRESHOLDS.items() if pop >= threshold),
+                max(TIER_THRESHOLDS.keys())
             )
-            data["avg_popularity"] = avg_popularity
 
         return album_map
 
