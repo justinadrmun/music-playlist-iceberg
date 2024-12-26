@@ -24,7 +24,7 @@ def validate_playlist_url(playlist_url: str) -> bool:
 def get_playlist_albums(playlist_url, TIER_THRESHOLDS, max_albums=100):
     """Fetch and process playlist albums with improved error handling."""
     if not validate_playlist_url(playlist_url):
-        st.warning("Invalid Spotify playlist URL.")
+        st.session_state["warning_msg"] = "Invalid Spotify playlist URL."
         return None
 
     try:
@@ -44,9 +44,9 @@ def get_playlist_albums(playlist_url, TIER_THRESHOLDS, max_albums=100):
             sp.playlist(playlist_id, fields="id")
         except spotipy.exceptions.SpotifyException as e:
             if e.http_status == 404:
-                st.warning("Playlist not found")
+                st.session_state["warning_msg"] = "Playlist not found"
             elif e.http_status == 403:
-                st.warning("Playlist is private or inaccessible")
+                st.session_state["warning_msg"] = "Playlist is private or inaccessible"
             return None
 
         # Fetch tracks with rate limiting protection
@@ -98,25 +98,24 @@ def get_playlist_albums(playlist_url, TIER_THRESHOLDS, max_albums=100):
                     }
 
         if not album_map:
-            st.warning("No valid albums found in playlist")
+            st.session_state["warning_msg"] = "No valid albums found in playlist"
             return None
 
         # Assign tiers based on album popularity
         for album_name, data in album_map.items():
             pop = data["popularity"]
             data["tier"] = next(
-                (tier for tier, threshold in TIER_THRESHOLDS.items() if pop >= threshold),
-                max(TIER_THRESHOLDS.keys())
+                (tier for tier, threshold in TIER_THRESHOLDS.items() if pop >= threshold), None
             )
 
         return album_map
 
     except ValueError as e:
-        st.warning("Issue with Spotify API credentials")
+        st.session_state["warning_msg"] = "Issue with Spotify API credentials"
         return None
     except spotipy.exceptions.SpotifyException as e:
-        st.warning(f"Spotify API error: {str(e)}")
+        st.session_state["warning_msg"] = f"Spotify API error: {str(e)}"
         return None
     except Exception as e:
-        st.warning(f"Unexpected error in get_playlist_albums: {str(e)}")
+        st.session_state["warning_msg"] = f"Unexpected error in get_playlist_albums: {str(e)}"
         return None

@@ -36,6 +36,7 @@ def main():
             """
         )
 
+    st.session_state["warning_msg"] = None
     playlist_url = st.text_input("Playlist URL:")
 
     if st.button("Submit", key="submit_button"):
@@ -57,11 +58,14 @@ def main():
 
         with st.spinner(f"Fetching album data..."):
             albums_data = get_playlist_albums(playlist_url, TIER_THRESHOLDS)
-            albums_frame = pd.DataFrame(albums_data).T.sort_values("popularity", ascending=False)
-            lower_limit = TIER_THRESHOLDS[max(TIER_THRESHOLDS.keys())]
-            albums_data = {album: data for album, data in albums_data.items() if data["popularity"] >= lower_limit}
 
             if albums_data is not None:
+                albums_frame = pd.DataFrame(albums_data).T.sort_values("popularity", ascending=False)
+
+                # filter out albums below the lower limit, only for iceberg
+                lower_limit = TIER_THRESHOLDS[max(TIER_THRESHOLDS.keys())]
+                albums_data = {album: data for album, data in albums_data.items() if data["popularity"] >= lower_limit}
+
                 if len(albums_data) >= 100:
                     st.warning("""
                     Your playlist has more than 100 unique albums. 
@@ -77,7 +81,10 @@ def main():
                     height=int(35.2*(len(albums_frame)+1)) 
                 )
             else:
-                st.warning("Issue fetching album data. Please check the playlist URL or try again later.")
+                if st.session_state["warning_msg"] is None:
+                    st.warning("Issue fetching album data. Please check the playlist URL or try again later.")
+                else:
+                    st.warning(st.session_state["warning_msg"])
 
 if __name__ == "__main__":
     main()
