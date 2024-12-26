@@ -66,7 +66,7 @@ def main():
                 lower_limit = TIER_THRESHOLDS[max(TIER_THRESHOLDS.keys())]
                 albums_data = {album: data for album, data in albums_data.items() if data["popularity"] >= lower_limit}
 
-                if len(albums_data) >= 100:
+                if albums_frame.shape[0] >= 100:
                     st.warning("""
                     Your playlist has more than 100 unique albums. 
                     Only the first 100 albums are visualised.
