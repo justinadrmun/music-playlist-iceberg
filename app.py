@@ -76,8 +76,14 @@ def main():
                 st.session_state["iceberg_image"] = create_iceberg_visual(albums_data)
                 tab1, tab2 = st.tabs(["Iceberg", "Data"])
                 tab1.image(st.session_state["iceberg_image"], caption="Save iceberg image with right-click")
-                tab2.dataframe(albums_frame.drop(columns=["image_url"]), 
+                tab2.dataframe(albums_frame,
                     use_container_width=True, 
+                    column_config={
+                        "image_url": st.column_config.ImageColumn(
+                            "album art",
+                            width="small",
+                        )
+                    },
                     height=int(35.2*(len(albums_frame)+1)) 
                 )
             else:
