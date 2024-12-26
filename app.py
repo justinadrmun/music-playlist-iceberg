@@ -15,7 +15,7 @@ TIER_THRESHOLDS: dict = {
 }
 
 def main():
-    st.title("Spotify Iceberg Visualiser")
+    st.title("Playlist Iceberg Visualiser")
     url = "https://developer.spotify.com/documentation/web-api/reference/get-several-tracks#:~:text=of%20the%20track.-,popularity,-integer"
     st.write("Enter a Spotify playlist URL to see an iceberg visualisation of [album popularity](%s)." % url)
     tier_frame = pd.DataFrame({"threshold": list(TIER_THRESHOLDS.values())}).T
